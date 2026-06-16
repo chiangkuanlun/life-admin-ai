@@ -150,6 +150,37 @@ h3 { margin-bottom: 8px; font-size: 20px; line-height: 1.25; }
   cursor: pointer;
 }
 .upload-zone input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+.case-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.8fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.case-grid label {
+  display: grid;
+  gap: 6px;
+}
+.case-grid span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.case-grid input,
+.case-grid select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfb;
+  color: var(--ink);
+  outline: none;
+}
+.case-grid input:focus,
+.case-grid select:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
 .upload-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 50%; background: var(--teal); color: white; font-size: 24px; line-height: 1; }
 .upload-zone small { color: var(--muted); }
 .field-label { display: block; margin: 18px 0 8px; font-weight: 800; }
@@ -274,7 +305,7 @@ textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15, 118, 
   .nav-cta { min-width: 84px; }
   h1 { font-size: 38px; }
   .hero-metrics, .pricing-grid, .feature-grid, .insight-grid, .sample-row, .dashboard-strip, .quality-bar { grid-template-columns: 1fr; }
-  .task-card, .draft-row, .action-row { grid-template-columns: 1fr; }
+  .task-card, .draft-row, .action-row, .case-grid { grid-template-columns: 1fr; }
   .task-meta { justify-self: start; }
   .results-panel { min-height: auto; }
 }

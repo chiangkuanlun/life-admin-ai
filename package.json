@@ -1,0 +1,10 @@
+{
+  "name": "life-admin-ai",
+  "version": "0.2.0",
+  "private": true,
+  "description": "AI 生活行政助手靜態平台",
+  "scripts": {
+    "test": "node --check app.js && node scripts/platform-check.mjs",
+    "deploy:check": "node scripts/platform-check.mjs"
+  }
+}

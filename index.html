@@ -31,7 +31,7 @@
           <p class="eyebrow">台灣個人用戶的 AI 生活行政助手</p>
           <h1>把生活裡的帳單、保單、稅務文件，變成清楚的待辦提醒。</h1>
           <p class="hero-lead">
-            貼上文件內容或讀入文字檔，AI 協助擷取金額、期限、機構、所需資料與下一步。Demo 版採不留原檔策略，只呈現結構化摘要與提醒。
+            貼上文件內容或讀入文字檔，AI 協助擷取金額、期限、機構、所需資料與下一步。平台採不留原檔策略，只呈現結構化摘要與提醒。
           </p>
           <div class="hero-actions">
             <a class="primary-button" href="#app">開啟工作台</a>
@@ -50,13 +50,13 @@
 
       <section class="workspace" id="app">
         <div class="section-heading">
-          <p class="eyebrow">Live MVP</p>
+          <p class="eyebrow">Platform Console</p>
           <h2>文件整理工作台</h2>
           <p>貼上一段帳單、保單、政府補助公告或稅務資料，立即產生可追溯的摘要、待辦、表單草稿與匯出資料。</p>
         </div>
 
         <div class="dashboard-strip" aria-label="工作台統計">
-          <article><span>已整理</span><strong id="statDocuments">0</strong><small>份文件</small></article>
+          <article><span>已整理</span><strong id="statDocuments">0</strong><small>個案件</small></article>
           <article><span>待辦</span><strong id="statTasks">0</strong><small>個提醒</small></article>
           <article><span>缺漏</span><strong id="statMissing">0</strong><small>個欄位</small></article>
           <article><span>信心</span><strong id="statConfidence">--</strong><small>解析品質</small></article>
@@ -72,11 +72,35 @@
               </div>
             </div>
 
+            <div class="case-grid" aria-label="案件設定">
+              <label>
+                <span>案件名稱</span>
+                <input id="caseNameInput" type="text" maxlength="40" placeholder="例如：六月電信帳單" />
+              </label>
+              <label>
+                <span>提醒時間</span>
+                <select id="reminderLeadInput">
+                  <option value="3 天前">3 天前</option>
+                  <option value="7 天前">7 天前</option>
+                  <option value="14 天前">14 天前</option>
+                  <option value="當天上午">當天上午</option>
+                </select>
+              </label>
+              <label>
+                <span>優先級</span>
+                <select id="priorityInput">
+                  <option value="一般">一般</option>
+                  <option value="重要">重要</option>
+                  <option value="緊急">緊急</option>
+                </select>
+              </label>
+            </div>
+
             <label class="upload-zone" for="fileInput">
               <input id="fileInput" type="file" accept=".txt,.pdf,image/*" />
               <span class="upload-icon">+</span>
               <strong>選擇文件</strong>
-              <small>文字檔會自動讀入；PDF/圖片目前只顯示檔名。</small>
+              <small>文字檔會自動讀入；PDF/圖片會先建立案件名稱。</small>
             </label>
             <p class="file-status" id="fileStatus">尚未選擇檔案</p>
 
@@ -123,6 +147,7 @@
             <div class="toolbar">
               <button class="tool-button" type="button" id="copyDraftButton">複製表單草稿</button>
               <button class="tool-button" type="button" id="downloadJsonButton">匯出 JSON</button>
+              <button class="tool-button" type="button" id="archiveCaseButton">封存案件</button>
             </div>
 
             <div class="tabs" role="tablist">
@@ -144,7 +169,7 @@
             <span class="panel-icon">02</span>
             <div>
               <h3>解析歷史</h3>
-              <p>保存在瀏覽器本機，方便連續測試不同文件類型。</p>
+              <p>保存在瀏覽器本機，方便回到近期案件與匯出紀錄。</p>
             </div>
           </div>
           <div class="history-list" id="historyList"></div>
@@ -153,7 +178,7 @@
 
       <section class="feature-band" id="features">
         <div class="section-heading compact">
-          <p class="eyebrow">MVP Scope</p>
+          <p class="eyebrow">Platform Scope</p>
           <h2>第一版就該有的能力</h2>
         </div>
         <div class="feature-grid">
@@ -182,7 +207,7 @@
           <h2>降低個資疑慮，先讓使用者放心試用。</h2>
         </div>
         <ul class="trust-list">
-          <li>原始檔僅供本次解析，Demo 不上傳後端，也不提供再次下載。</li>
+          <li>原始檔僅供本次解析，平台不保存原始檔，也不提供再次下載。</li>
           <li>儲存資料限於分類、摘要欄位、提醒事項與使用者確認內容。</li>
           <li>稅務、保險、補助結果只做整理輔助，正式申報與決策仍需使用者確認。</li>
         </ul>
@@ -193,7 +218,7 @@
 
     <footer class="footer">
       <p>清單生活 AI - AI Life Admin Copilot</p>
-      <p>Designed for Taiwan personal life administration MVP.</p>
+      <p>Designed for Taiwan personal life administration.</p>
     </footer>
 
     <script src="app.js"></script>

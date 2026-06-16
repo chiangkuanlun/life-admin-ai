@@ -35,6 +35,9 @@ const els = {
   fileInput: document.querySelector("#fileInput"),
   fileStatus: document.querySelector("#fileStatus"),
   documentText: document.querySelector("#documentText"),
+  caseNameInput: document.querySelector("#caseNameInput"),
+  reminderLeadInput: document.querySelector("#reminderLeadInput"),
+  priorityInput: document.querySelector("#priorityInput"),
   analyzeButton: document.querySelector("#analyzeButton"),
   clearButton: document.querySelector("#clearButton"),
   resultTitle: document.querySelector("#resultTitle"),
@@ -55,6 +58,7 @@ const els = {
   statConfidence: document.querySelector("#statConfidence"),
   copyDraftButton: document.querySelector("#copyDraftButton"),
   downloadJsonButton: document.querySelector("#downloadJsonButton"),
+  archiveCaseButton: document.querySelector("#archiveCaseButton"),
   toast: document.querySelector("#toast"),
 };
 
@@ -120,7 +124,7 @@ function confidenceFor(result) {
 function buildTasks(result) {
   const tasks = [];
   if (result.date !== "未偵測") {
-    tasks.push({ title: `建立${result.category}提醒`, detail: `在 ${result.date} 前完成確認，避免漏繳、逾期或錯過申請。`, meta: "提醒", done: false });
+    tasks.push({ title: `建立${result.category}提醒`, detail: `在 ${result.date} 前完成確認，提醒時間設定為 ${result.reminderLead}。`, meta: result.priority, done: false });
   }
   if (result.amount !== "未偵測") {
     tasks.push({ title: "確認金額與付款方式", detail: `本文件偵測到 ${result.amount}，請核對帳戶、信用卡或轉帳資訊。`, meta: "金額", done: false });
@@ -146,12 +150,26 @@ function suggestedUse(category) {
   }[category] || "個人行政文件摘要與待辦整理";
 }
 
+function currentCaseSettings(text) {
+  const fallbackName = text.split(/\n/).map((line) => line.trim()).find(Boolean)?.slice(0, 24) || "未命名案件";
+  return {
+    caseName: els.caseNameInput.value.trim() || fallbackName,
+    reminderLead: els.reminderLeadInput.value,
+    priority: els.priorityInput.value,
+  };
+}
+
 function analyzeDocument(text) {
   const cleanText = normalizeText(text);
   const detected = detectCategory(cleanText);
+  const settings = currentCaseSettings(text);
   const result = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
     createdAt: new Date().toISOString(),
+    status: "進行中",
+    caseName: settings.caseName,
+    reminderLead: settings.reminderLead,
+    priority: settings.priority,
     category: detected.category,
     issuer: extractIssuer(text),
     amount: extractAmount(cleanText),
@@ -179,20 +197,22 @@ function analyzeDocument(text) {
     ["金額", result.amount],
     ["期限/日期", result.date],
     ["建議用途", suggestedUse(result.category)],
+    ["提醒時間", result.reminderLead],
+    ["優先級", result.priority],
     ["資料保存", "不保存原始檔，僅保存使用者確認後的摘要與提醒"],
   ];
   result.trace = [
     ["分類依據", result.categoryEvidence.length ? `命中關鍵字：${result.categoryEvidence.join("、")}` : "依文件關鍵字與語意判斷"],
     ["金額來源", result.amount === "未偵測" ? "未在內容中找到明確金額" : `擷取到金額片段：${result.amount}`],
     ["日期來源", result.date === "未偵測" ? "未在內容中找到明確日期" : `擷取到日期片段：${result.date}`],
-    ["原檔狀態", "Demo 版不保存原始檔，也不提供下載或再次開啟"],
+    ["原檔狀態", "平台不保存原始檔，也不提供下載或再次開啟"],
   ];
   return result;
 }
 
 function renderResult(result) {
   state.result = result;
-  els.resultTitle.textContent = `${result.category}整理結果`;
+  els.resultTitle.textContent = `${result.caseName} · ${result.category}`;
   els.categoryOutput.textContent = result.category;
   els.issuerOutput.textContent = result.issuer;
   els.amountOutput.textContent = result.amount;
@@ -238,8 +258,8 @@ function renderHistory() {
     ? state.history.map((item) => `
       <button class="history-item" type="button" data-history-id="${item.id}">
         <span>${escapeHtml(item.category)}</span>
-        <strong>${escapeHtml(item.issuer)}</strong>
-        <small>${escapeHtml(item.date)} · ${item.confidence}%</small>
+        <strong>${escapeHtml(item.caseName || item.issuer)}</strong>
+        <small>${escapeHtml(item.status || "進行中")} · ${escapeHtml(item.date)} · ${item.confidence}%</small>
       </button>`).join("")
     : `<p class="empty-history">尚無歷史紀錄。完成第一次解析後會顯示在這裡。</p>`;
 }
@@ -318,6 +338,7 @@ els.analyzeButton.addEventListener("click", () => {
 
 els.clearButton.addEventListener("click", () => {
   els.documentText.value = "";
+  els.caseNameInput.value = "";
   els.documentText.focus();
 });
 
@@ -329,14 +350,23 @@ els.fileInput.addEventListener("change", async (event) => {
   }
   if (file.type === "text/plain" || file.name.endsWith(".txt")) {
     els.documentText.value = await file.text();
-    els.fileStatus.textContent = `已讀入：${file.name}。Demo 不保存原始檔。`;
+    els.caseNameInput.value = file.name.replace(/\.[^.]+$/, "");
+    els.fileStatus.textContent = `已讀入：${file.name}。平台不保存原始檔。`;
   } else {
+    els.caseNameInput.value = file.name.replace(/\.[^.]+$/, "");
     els.fileStatus.textContent = `已選擇：${file.name}。PDF/圖片 OCR 將於後續版本接入。`;
   }
 });
 
 els.copyDraftButton.addEventListener("click", copyDraft);
 els.downloadJsonButton.addEventListener("click", downloadJson);
+els.archiveCaseButton.addEventListener("click", () => {
+  if (!state.result) return showToast("請先完成一次解析");
+  state.result.status = "已封存";
+  addToHistory(state.result);
+  renderResult(state.result);
+  showToast("案件已封存於本機紀錄");
+});
 
 els.taskList.addEventListener("change", (event) => {
   const input = event.target.closest("input[type='checkbox']");
