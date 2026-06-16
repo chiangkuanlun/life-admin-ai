@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="AI 生活行政助手，協助台灣個人用戶整理帳單、保單、稅務文件、補助公告與行政提醒。"
+    />
+    <title>清單生活 AI | AI 生活行政助手</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#app" aria-label="清單生活 AI 首頁">
+        <span class="brand-mark">清</span>
+        <span>
+          <strong>清單生活 AI</strong>
+          <small>Life Admin Copilot</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="主要導覽">
+        <a href="#app">工作台</a>
+        <a href="#features">功能</a>
+        <a href="#pricing">價格</a>
+        <a href="#trust">隱私</a>
+      </nav>
+      <a class="nav-cta" href="#app">立即整理</a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">台灣個人用戶的 AI 生活行政助手</p>
+          <h1 id="hero-title">把生活裡的帳單、保單、稅務文件，變成清楚的待辦提醒。</h1>
+          <p class="hero-lead">
+            上傳或貼上文件內容，AI 協助擷取金額、期限、機構、所需資料與下一步。第一版採不留原檔策略，只保存你確認後的摘要與提醒。
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button" href="#app">開啟工作台</a>
+            <a class="secondary-button" href="#trust">查看資料策略</a>
+          </div>
+          <dl class="hero-metrics" aria-label="產品重點">
+            <div>
+              <dt>8 類</dt>
+              <dd>生活行政分類</dd>
+            </div>
+            <div>
+              <dt>0</dt>
+              <dd>預設原檔留存</dd>
+            </div>
+            <div>
+              <dt>3 步</dt>
+              <dd>文件到待辦</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="hero-visual" aria-label="AI 生活行政助手產品情境圖">
+          <img src="assets/hero-life-admin.svg" alt="桌面上的文件、帳單與 AI 行政助手介面示意" />
+        </div>
+      </section>
+
+      <section class="workspace" id="app" aria-labelledby="workspace-title">
+        <div class="section-heading">
+          <p class="eyebrow">Live MVP</p>
+          <h2 id="workspace-title">文件整理工作台</h2>
+          <p>貼上一段帳單、保單、政府補助公告或稅務資料，立即產生可追溯的摘要、待辦與表單草稿。</p>
+        </div>
+
+        <div class="app-shell">
+          <aside class="input-panel" aria-label="文件輸入區">
+            <div class="panel-heading">
+              <span class="panel-icon">01</span>
+              <div>
+                <h3>輸入文件內容</h3>
+                <p>支援文字 demo；PDF/圖片上傳入口已保留。</p>
+              </div>
+            </div>
+
+            <label class="upload-zone" for="fileInput">
+              <input id="fileInput" type="file" accept=".pdf,image/*,.txt" />
+              <span class="upload-icon">+</span>
+              <strong>選擇 PDF、圖片或文字檔</strong>
+              <small>Demo 版不會保存原始檔，選檔後只顯示檔名。</small>
+            </label>
+            <p class="file-status" id="fileStatus">尚未選擇檔案</p>
+
+            <label class="field-label" for="documentText">文件文字</label>
+            <textarea id="documentText" rows="13" spellcheck="false"></textarea>
+
+            <div class="sample-row" aria-label="範例文件">
+              <button class="sample-button" type="button" data-sample="bill">電信帳單</button>
+              <button class="sample-button" type="button" data-sample="insurance">保單</button>
+              <button class="sample-button" type="button" data-sample="subsidy">補助公告</button>
+            </div>
+
+            <button class="primary-button full" type="button" id="analyzeButton">AI 整理文件</button>
+            <p class="fine-print">本服務為資訊整理輔助，不代替正式報稅、保險、法律或財務建議。</p>
+          </aside>
+
+          <section class="results-panel" aria-label="AI 解析結果">
+            <div class="result-topline">
+              <div>
+                <p class="eyebrow">Structured Output</p>
+                <h3 id="resultTitle">等待文件輸入</h3>
+              </div>
+              <span class="status-pill" id="privacyPill">不留原檔</span>
+            </div>
+
+            <div class="insight-grid">
+              <article class="insight-card">
+                <span>分類</span>
+                <strong id="categoryOutput">尚未分析</strong>
+              </article>
+              <article class="insight-card">
+                <span>機構</span>
+                <strong id="issuerOutput">尚未分析</strong>
+              </article>
+              <article class="insight-card">
+                <span>金額</span>
+                <strong id="amountOutput">尚未分析</strong>
+              </article>
+              <article class="insight-card">
+                <span>期限</span>
+                <strong id="dateOutput">尚未分析</strong>
+              </article>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="解析結果分頁">
+              <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="tasks">待辦</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="summary">摘要</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="form">表單草稿</button>
+              <button class="tab" type="button" role="tab" aria-selected="false" data-tab="trace">追溯</button>
+            </div>
+
+            <div class="tab-panel active" id="tasksPanel" role="tabpanel">
+              <div class="task-list" id="taskList"></div>
+            </div>
+
+            <div class="tab-panel" id="summaryPanel" role="tabpanel" hidden>
+              <div class="summary-box" id="summaryOutput"></div>
+            </div>
+
+            <div class="tab-panel" id="formPanel" role="tabpanel" hidden>
+              <div class="form-draft" id="formOutput"></div>
+            </div>
+
+            <div class="tab-panel" id="tracePanel" role="tabpanel" hidden>
+              <div class="trace-list" id="traceOutput"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="feature-band" id="features" aria-labelledby="features-title">
+        <div class="section-heading compact">
+          <p class="eyebrow">MVP Scope</p>
+          <h2 id="features-title">第一版就該有的能力</h2>
+        </div>
+        <div class="feature-grid">
+          <article>
+            <h3>AI 文件摘要</h3>
+            <p>將帳單、保單、稅務資料、補助公告整理成重點、風險、缺少資料與下一步。</p>
+          </article>
+          <article>
+            <h3>行政待辦卡片</h3>
+            <p>從文件中擷取日期、金額、機構與事項，產生提醒與可執行行動。</p>
+          </article>
+          <article>
+            <h3>表單草稿生成</h3>
+            <p>把文件內容轉成可複製欄位，降低重複填寫政府、保險、銀行表單的時間。</p>
+          </article>
+          <article>
+            <h3>不留原檔策略</h3>
+            <p>解析完成即丟棄原始檔，只保存使用者確認後的結構化資料與提醒。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="pricing" id="pricing" aria-labelledby="pricing-title">
+        <div class="section-heading compact">
+          <p class="eyebrow">Pricing</p>
+          <h2 id="pricing-title">立即上線的收費模型</h2>
+        </div>
+        <div class="pricing-grid">
+          <article class="price-card">
+            <h3>免費</h3>
+            <p class="price">$0</p>
+            <p>每月少量解析，適合體驗帳單與提醒整理。</p>
+          </article>
+          <article class="price-card highlighted">
+            <h3>個人</h3>
+            <p class="price">$149<span>/月</span></p>
+            <p>提高解析額度、提醒數、歷史摘要與表單草稿。</p>
+          </article>
+          <article class="price-card">
+            <h3>家庭</h3>
+            <p class="price">$299<span>/月</span></p>
+            <p>多人文件分類、家庭帳單、保險與繳費提醒。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="trust-band" id="trust" aria-labelledby="trust-title">
+        <div>
+          <p class="eyebrow">Privacy First</p>
+          <h2 id="trust-title">降低個資疑慮，先讓使用者放心試用。</h2>
+        </div>
+        <ul class="trust-list">
+          <li>原始檔僅供本次解析，Demo 不上傳後端，也不提供再次下載。</li>
+          <li>儲存資料限於分類、摘要欄位、提醒事項與使用者確認內容。</li>
+          <li>稅務、保險、補助結果只做整理輔助，正式申報與決策仍需使用者確認。</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>清單生活 AI - AI Life Admin Copilot</p>
+      <p>Designed for Taiwan personal life administration MVP.</p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
