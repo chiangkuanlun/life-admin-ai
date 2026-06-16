@@ -30,6 +30,7 @@ const categoryRules = [
 
 const usersKey = "life-admin-ai-users";
 const sessionKey = "life-admin-ai-active-user";
+const oauthKey = "life-admin-ai-oauth-settings";
 const state = {
   result: null,
   history: [],
@@ -48,6 +49,10 @@ const els = {
   registerButton: document.querySelector("#registerButton"),
   loginButton: document.querySelector("#loginButton"),
   logoutButton: document.querySelector("#logoutButton"),
+  lineClientInput: document.querySelector("#lineClientInput"),
+  googleClientInput: document.querySelector("#googleClientInput"),
+  appleClientInput: document.querySelector("#appleClientInput"),
+  saveOauthButton: document.querySelector("#saveOauthButton"),
   accountName: document.querySelector("#accountName"),
   accountMeta: document.querySelector("#accountMeta"),
   accountProvider: document.querySelector("#accountProvider"),
@@ -86,6 +91,8 @@ const els = {
   archiveCaseButton: document.querySelector("#archiveCaseButton"),
   toast: document.querySelector("#toast"),
 };
+
+const oauthSettings = loadOauthSettings();
 
 function loadUsers() {
   try {
@@ -130,16 +137,25 @@ function userScopedKey(suffix) {
   return `life-admin-ai:${state.user.id}:${suffix}`;
 }
 
-function createUser({ name, email, password, provider }) {
+async function hashSecret(secret, salt) {
+  const bytes = new TextEncoder().encode(`${salt}:${secret}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function createUser({ name, email, password, provider, providerSubject }) {
   const normalizedEmail = email.trim().toLowerCase();
   const existing = state.users.find((user) => user.email === normalizedEmail && user.provider === provider);
   if (existing) return existing;
+  const salt = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
   const user = {
-    id: `${provider.toLowerCase()}-${normalizedEmail || Date.now()}`.replace(/[^a-z0-9@._-]/gi, "-"),
+    id: `${provider.toLowerCase()}-${providerSubject || normalizedEmail || Date.now()}`.replace(/[^a-z0-9@._-]/gi, "-"),
     name: name.trim() || provider,
     email: normalizedEmail,
     provider,
-    password: password || "",
+    salt,
+    passwordHash: password ? await hashSecret(password, salt) : "",
+    providerSubject: providerSubject || "",
     createdAt: new Date().toISOString(),
   };
   state.users.push(user);
@@ -147,41 +163,43 @@ function createUser({ name, email, password, provider }) {
   return user;
 }
 
-function registerWithPlatform() {
+async function registerWithPlatform() {
   const name = els.authNameInput.value.trim();
   const email = els.authEmailInput.value.trim().toLowerCase();
   const password = els.authPasswordInput.value;
   if (!name || !email || password.length < 6) return showToast("請輸入姓名、Email 與至少 6 碼密碼");
   if (state.users.some((user) => user.email === email && user.provider === "平台帳號")) return showToast("此 Email 已建立平台帳號");
-  const user = createUser({ name, email, password, provider: "平台帳號" });
+  const user = await createUser({ name, email, password, provider: "平台帳號" });
   setActiveUser(safeUser(user));
   showToast("平台帳號已建立");
 }
 
-function loginWithPlatform() {
+async function loginWithPlatform() {
   const email = els.authEmailInput.value.trim().toLowerCase();
   const password = els.authPasswordInput.value;
-  const user = state.users.find((item) => item.email === email && item.provider === "平台帳號" && item.password === password);
-  if (!user) return showToast("帳號或密碼不正確");
+  const user = state.users.find((item) => item.email === email && item.provider === "平台帳號");
+  const passwordHash = user ? await hashSecret(password, user.salt) : "";
+  const legacyMatch = user?.password && user.password === password;
+  const currentMatch = user?.passwordHash && user.passwordHash === passwordHash;
+  if (legacyMatch && !user.passwordHash) {
+    user.salt = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    user.passwordHash = await hashSecret(password, user.salt);
+    delete user.password;
+    saveUsers();
+  }
+  if (!user || (!legacyMatch && !currentMatch)) return showToast("帳號或密碼不正確");
   setActiveUser(safeUser(user));
   showToast("登入成功");
 }
 
-function loginWithProvider(provider) {
-  const email = els.authEmailInput.value.trim().toLowerCase() || `${provider.toLowerCase()}@connected.local`;
-  const name = els.authNameInput.value.trim() || `${provider} 使用者`;
-  const user = createUser({ name, email, password: "", provider });
-  setActiveUser(safeUser(user));
-  showToast(`${provider} 身份已連結`);
-}
-
 function safeUser(user) {
-  const { password, ...publicUser } = user;
+  const { password, passwordHash, salt, ...publicUser } = user;
   return publicUser;
 }
 
 function renderAuthState() {
   if (state.user) {
+    document.body.classList.remove("guest");
     els.accountName.textContent = state.user.name;
     els.accountMeta.textContent = `${state.user.email || "未提供 Email"} · ${state.user.id}`;
     els.accountProvider.textContent = state.user.provider;
@@ -190,11 +208,136 @@ function renderAuthState() {
     els.authNameInput.value = state.user.name;
     els.authEmailInput.value = state.user.email || "";
   } else {
+    document.body.classList.add("guest");
     els.accountName.textContent = "尚未登入";
     els.accountMeta.textContent = "登入後才會保存案件、解析歷史與 LLM 設定。";
     els.accountProvider.textContent = "未連結";
     els.accountStorage.textContent = "資料未啟用";
     els.appShell.classList.add("is-locked");
+  }
+}
+
+function loadOauthSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(oauthKey) || '{"lineClientId":"","googleClientId":"","appleClientId":""}');
+  } catch {
+    return { lineClientId: "", googleClientId: "", appleClientId: "" };
+  }
+}
+
+function saveOauthSettings() {
+  oauthSettings.lineClientId = els.lineClientInput.value.trim();
+  oauthSettings.googleClientId = els.googleClientInput.value.trim();
+  oauthSettings.appleClientId = els.appleClientInput.value.trim();
+  localStorage.setItem(oauthKey, JSON.stringify(oauthSettings));
+  showToast("第三方登入設定已保存");
+}
+
+function renderOauthSettings() {
+  els.lineClientInput.value = oauthSettings.lineClientId || "";
+  els.googleClientInput.value = oauthSettings.googleClientId || "";
+  els.appleClientInput.value = oauthSettings.appleClientId || "";
+}
+
+function currentRedirectUri() {
+  return `${location.origin}${location.pathname}`;
+}
+
+function oauthState(provider) {
+  const stateValue = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+  sessionStorage.setItem("life-admin-ai-oauth-state", JSON.stringify({ provider, state: stateValue, createdAt: Date.now() }));
+  return stateValue;
+}
+
+function startOAuth(provider) {
+  saveOauthSettings();
+  const redirectUri = currentRedirectUri();
+  const stateValue = oauthState(provider);
+  let url = "";
+
+  if (provider === "Google") {
+    if (!oauthSettings.googleClientId) return showToast("請先輸入 Google Client ID");
+    url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(oauthSettings.googleClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&state=${encodeURIComponent(stateValue)}&prompt=select_account`;
+  }
+
+  if (provider === "LINE") {
+    if (!oauthSettings.lineClientId) return showToast("請先輸入 LINE Channel ID");
+    url = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${encodeURIComponent(oauthSettings.lineClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(stateValue)}&scope=${encodeURIComponent("profile openid email")}`;
+  }
+
+  if (provider === "Apple") {
+    if (!oauthSettings.appleClientId) return showToast("請先輸入 Apple Service ID");
+    url = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(oauthSettings.appleClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code%20id_token&scope=${encodeURIComponent("name email")}&response_mode=fragment&state=${encodeURIComponent(stateValue)}`;
+  }
+
+  if (url) location.href = url;
+}
+
+async function handleOAuthCallback() {
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const query = new URLSearchParams(location.search);
+  const callbackState = hash.get("state") || query.get("state");
+  const pending = JSON.parse(sessionStorage.getItem("life-admin-ai-oauth-state") || "null");
+  if (!pending || !callbackState || pending.state !== callbackState) return;
+
+  const provider = pending.provider;
+  const accessToken = hash.get("access_token");
+  const idToken = hash.get("id_token");
+  const code = query.get("code") || hash.get("code");
+  let profile = null;
+
+  if (provider === "Google" && accessToken) {
+    profile = await fetchGoogleProfile(accessToken);
+  } else if (idToken) {
+    profile = profileFromIdToken(provider, idToken);
+  } else if (code) {
+    profile = {
+      name: `${provider} 使用者`,
+      email: `${provider.toLowerCase()}-${code.slice(0, 8)}@oauth.local`,
+      subject: code.slice(0, 16),
+      pendingCode: code,
+    };
+    showToast(`${provider} 已取得授權碼，正式換 token 需後端代理`);
+  }
+
+  if (profile) {
+    const user = await createUser({
+      name: profile.name,
+      email: profile.email,
+      password: "",
+      provider,
+      providerSubject: profile.subject,
+    });
+    setActiveUser(safeUser(user));
+    sessionStorage.removeItem("life-admin-ai-oauth-state");
+    history.replaceState({}, document.title, currentRedirectUri());
+    showToast(`${provider} 登入完成`);
+  }
+}
+
+async function fetchGoogleProfile(accessToken) {
+  const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error("Google profile fetch failed");
+  const profile = await response.json();
+  return {
+    name: profile.name || "Google 使用者",
+    email: profile.email || `${profile.sub}@google.local`,
+    subject: profile.sub,
+  };
+}
+
+function profileFromIdToken(provider, idToken) {
+  try {
+    const payload = JSON.parse(atob(idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return {
+      name: payload.name || `${provider} 使用者`,
+      email: payload.email || `${payload.sub}@${provider.toLowerCase()}.local`,
+      subject: payload.sub,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -542,8 +685,8 @@ function saveLlmSettings() {
 
 function renderLlmSettings() {
   const settings = state.llm || { enabled: false, endpoint: "", model: "", apiKey: "" };
-  els.llmEndpointInput.value = settings.endpoint || "";
-  els.llmModelInput.value = settings.model || "";
+  els.llmEndpointInput.value = settings.endpoint || "https://api.openai.com/v1/chat/completions";
+  els.llmModelInput.value = settings.model || "gpt-4.1-mini";
   els.llmKeyInput.value = settings.apiKey || "";
   els.llmEnabledInput.checked = Boolean(settings.enabled);
   els.llmStatus.textContent = settings.enabled ? "已啟用" : "尚未啟用";
@@ -598,8 +741,9 @@ els.logoutButton.addEventListener("click", () => {
   showToast("已登出");
 });
 document.querySelectorAll(".provider-button").forEach((button) => {
-  button.addEventListener("click", () => loginWithProvider(button.dataset.provider));
+  button.addEventListener("click", () => startOAuth(button.dataset.provider));
 });
+els.saveOauthButton.addEventListener("click", saveOauthSettings);
 els.saveLlmButton.addEventListener("click", saveLlmSettings);
 els.checkLlmButton.addEventListener("click", async () => {
   saveLlmSettings();
@@ -685,6 +829,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
 els.documentText.value = samples.bill;
 const initialResult = analyzeDocument(samples.bill);
 renderResult(initialResult);
+renderOauthSettings();
+handleOAuthCallback().catch((error) => showToast(`第三方登入回傳處理未完成：${error.message}`));
 if (state.user) {
   setActiveUser(state.user);
 } else {

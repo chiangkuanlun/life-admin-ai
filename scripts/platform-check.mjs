@@ -59,6 +59,13 @@ async function main() {
     }
   }
 
+  for (const marker of ["passwordHash", "hashSecret", "startOAuth", "handleOAuthCallback", "response_type=token", "body.guest"]) {
+    const haystack = `${contents.get("app.js")}\n${contents.get("styles.css")}`;
+    if (!haystack.includes(marker)) {
+      throw new Error(`Missing auth/OAuth wiring: ${marker}`);
+    }
+  }
+
   if (!contents.get("styles.css").includes("@media (max-width: 760px)")) {
     throw new Error("Mobile responsive stylesheet check failed");
   }

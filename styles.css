@@ -398,19 +398,79 @@ textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15, 118, 
   transition: opacity 180ms ease, transform 180ms ease;
 }
 .toast.show { opacity: 1; transform: translateY(0); }
+.oauth-settings {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.oauth-settings summary {
+  cursor: pointer;
+  color: var(--teal-dark);
+  font-weight: 800;
+}
+.oauth-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.oauth-grid label {
+  display: grid;
+  gap: 6px;
+}
+.oauth-grid span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.oauth-grid input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfb;
+  color: var(--ink);
+  outline: none;
+}
+body.guest .hero,
+body.guest .workspace > .section-heading,
+body.guest .llm-panel,
+body.guest .dashboard-strip,
+body.guest .app-shell,
+body.guest .history-panel,
+body.guest .feature-band,
+body.guest .pricing,
+body.guest .trust-band,
+body.guest .footer,
+body.guest .nav,
+body.guest .nav-cta,
+body.guest .account-card {
+  display: none;
+}
+body.guest .workspace {
+  min-height: calc(100vh - 72px);
+  display: grid;
+  align-items: center;
+}
+body.guest .auth-panel {
+  width: min(860px, 100%);
+  margin: 0 auto;
+  grid-template-columns: 1fr;
+}
 
 @media (max-width: 1040px) {
   .hero, .app-shell, .trust-band, .auth-panel { grid-template-columns: 1fr; }
   .hero { min-height: auto; }
   .hero-visual img { height: auto; max-height: 560px; }
-  .feature-grid, .insight-grid, .dashboard-strip, .auth-grid, .llm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feature-grid, .insight-grid, .dashboard-strip, .auth-grid, .llm-grid, .oauth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .topbar { position: static; align-items: flex-start; gap: 12px; }
   .nav { display: none; }
   .nav-cta { min-width: 84px; }
   h1 { font-size: 38px; }
-  .hero-metrics, .pricing-grid, .feature-grid, .insight-grid, .sample-row, .dashboard-strip, .quality-bar, .auth-grid, .llm-grid { grid-template-columns: 1fr; }
+  .hero-metrics, .pricing-grid, .feature-grid, .insight-grid, .sample-row, .dashboard-strip, .quality-bar, .auth-grid, .llm-grid, .oauth-grid { grid-template-columns: 1fr; }
   .task-card, .draft-row, .action-row, .case-grid { grid-template-columns: 1fr; }
   .task-meta { justify-self: start; }
   .results-panel { min-height: auto; }
