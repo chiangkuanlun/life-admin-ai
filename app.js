@@ -28,13 +28,38 @@ const categoryRules = [
   { category: "行程提醒", keywords: ["會議", "預約", "行程", "報到", "截止"] },
 ];
 
-const storeKey = "life-admin-ai-history";
-const state = { result: null, history: loadHistory() };
+const usersKey = "life-admin-ai-users";
+const sessionKey = "life-admin-ai-active-user";
+const state = {
+  result: null,
+  history: [],
+  user: loadActiveUser(),
+  users: loadUsers(),
+  llm: null,
+};
 
 const els = {
   fileInput: document.querySelector("#fileInput"),
   fileStatus: document.querySelector("#fileStatus"),
   documentText: document.querySelector("#documentText"),
+  authNameInput: document.querySelector("#authNameInput"),
+  authEmailInput: document.querySelector("#authEmailInput"),
+  authPasswordInput: document.querySelector("#authPasswordInput"),
+  registerButton: document.querySelector("#registerButton"),
+  loginButton: document.querySelector("#loginButton"),
+  logoutButton: document.querySelector("#logoutButton"),
+  accountName: document.querySelector("#accountName"),
+  accountMeta: document.querySelector("#accountMeta"),
+  accountProvider: document.querySelector("#accountProvider"),
+  accountStorage: document.querySelector("#accountStorage"),
+  appShell: document.querySelector("#appShell"),
+  llmEndpointInput: document.querySelector("#llmEndpointInput"),
+  llmModelInput: document.querySelector("#llmModelInput"),
+  llmKeyInput: document.querySelector("#llmKeyInput"),
+  llmEnabledInput: document.querySelector("#llmEnabledInput"),
+  saveLlmButton: document.querySelector("#saveLlmButton"),
+  checkLlmButton: document.querySelector("#checkLlmButton"),
+  llmStatus: document.querySelector("#llmStatus"),
   caseNameInput: document.querySelector("#caseNameInput"),
   reminderLeadInput: document.querySelector("#reminderLeadInput"),
   priorityInput: document.querySelector("#priorityInput"),
@@ -61,6 +86,117 @@ const els = {
   archiveCaseButton: document.querySelector("#archiveCaseButton"),
   toast: document.querySelector("#toast"),
 };
+
+function loadUsers() {
+  try {
+    return JSON.parse(localStorage.getItem(usersKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveUsers() {
+  localStorage.setItem(usersKey, JSON.stringify(state.users));
+}
+
+function loadActiveUser() {
+  try {
+    return JSON.parse(localStorage.getItem(sessionKey) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function setActiveUser(user) {
+  state.user = user;
+  if (user) {
+    localStorage.setItem(sessionKey, JSON.stringify(user));
+    state.history = loadHistory();
+    state.llm = loadLlmSettings();
+  } else {
+    localStorage.removeItem(sessionKey);
+    state.history = [];
+    state.result = null;
+    state.llm = null;
+  }
+  renderAuthState();
+  renderHistory();
+  renderLlmSettings();
+  updateStats();
+}
+
+function userScopedKey(suffix) {
+  if (!state.user) return null;
+  return `life-admin-ai:${state.user.id}:${suffix}`;
+}
+
+function createUser({ name, email, password, provider }) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = state.users.find((user) => user.email === normalizedEmail && user.provider === provider);
+  if (existing) return existing;
+  const user = {
+    id: `${provider.toLowerCase()}-${normalizedEmail || Date.now()}`.replace(/[^a-z0-9@._-]/gi, "-"),
+    name: name.trim() || provider,
+    email: normalizedEmail,
+    provider,
+    password: password || "",
+    createdAt: new Date().toISOString(),
+  };
+  state.users.push(user);
+  saveUsers();
+  return user;
+}
+
+function registerWithPlatform() {
+  const name = els.authNameInput.value.trim();
+  const email = els.authEmailInput.value.trim().toLowerCase();
+  const password = els.authPasswordInput.value;
+  if (!name || !email || password.length < 6) return showToast("請輸入姓名、Email 與至少 6 碼密碼");
+  if (state.users.some((user) => user.email === email && user.provider === "平台帳號")) return showToast("此 Email 已建立平台帳號");
+  const user = createUser({ name, email, password, provider: "平台帳號" });
+  setActiveUser(safeUser(user));
+  showToast("平台帳號已建立");
+}
+
+function loginWithPlatform() {
+  const email = els.authEmailInput.value.trim().toLowerCase();
+  const password = els.authPasswordInput.value;
+  const user = state.users.find((item) => item.email === email && item.provider === "平台帳號" && item.password === password);
+  if (!user) return showToast("帳號或密碼不正確");
+  setActiveUser(safeUser(user));
+  showToast("登入成功");
+}
+
+function loginWithProvider(provider) {
+  const email = els.authEmailInput.value.trim().toLowerCase() || `${provider.toLowerCase()}@connected.local`;
+  const name = els.authNameInput.value.trim() || `${provider} 使用者`;
+  const user = createUser({ name, email, password: "", provider });
+  setActiveUser(safeUser(user));
+  showToast(`${provider} 身份已連結`);
+}
+
+function safeUser(user) {
+  const { password, ...publicUser } = user;
+  return publicUser;
+}
+
+function renderAuthState() {
+  if (state.user) {
+    els.accountName.textContent = state.user.name;
+    els.accountMeta.textContent = `${state.user.email || "未提供 Email"} · ${state.user.id}`;
+    els.accountProvider.textContent = state.user.provider;
+    els.accountStorage.textContent = "資料區已啟用";
+    els.appShell.classList.remove("is-locked");
+    els.authNameInput.value = state.user.name;
+    els.authEmailInput.value = state.user.email || "";
+  } else {
+    els.accountName.textContent = "尚未登入";
+    els.accountMeta.textContent = "登入後才會保存案件、解析歷史與 LLM 設定。";
+    els.accountProvider.textContent = "未連結";
+    els.accountStorage.textContent = "資料未啟用";
+    els.appShell.classList.add("is-locked");
+  }
+}
 
 function normalizeText(text) {
   return text.replace(/\s+/g, " ").trim();
@@ -210,6 +346,97 @@ function analyzeDocument(text) {
   return result;
 }
 
+async function analyzeWithLlm(text, baseResult) {
+  const settings = state.llm || loadLlmSettings();
+  if (!settings.enabled) return baseResult;
+  if (!settings.endpoint || !settings.model || !settings.apiKey) {
+    showToast("LLM 設定未完整，已使用本機解析");
+    return baseResult;
+  }
+
+  const systemPrompt = [
+    "你是台灣個人生活行政文件整理助理。",
+    "請只回傳 JSON，不要 Markdown。",
+    "JSON 欄位：category, issuer, amount, date, summaryItems, tasks, missing。",
+    "category 必須是：報稅、保險、信用卡、訂閱、帳單、政府補助、行程提醒、其他文件。",
+    "tasks 每筆包含 title, detail, meta。",
+    "若無法判斷請使用「未偵測」。",
+  ].join("\n");
+
+  try {
+    els.llmStatus.textContent = "解析中";
+    const response = await fetch(settings.endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: text },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    const content = payload.choices?.[0]?.message?.content || "";
+    const llm = JSON.parse(content);
+    const merged = mergeLlmResult(baseResult, llm);
+    els.llmStatus.textContent = "已完成";
+    return merged;
+  } catch (error) {
+    els.llmStatus.textContent = "連線未完成";
+    showToast(`LLM 解析未完成，已使用本機解析：${error.message}`);
+    return baseResult;
+  }
+}
+
+function mergeLlmResult(base, llm) {
+  const result = { ...base };
+  result.category = llm.category || base.category;
+  result.issuer = llm.issuer || base.issuer;
+  result.amount = llm.amount || base.amount;
+  result.date = llm.date || base.date;
+  result.missing = Array.isArray(llm.missing) ? llm.missing : base.missing;
+  result.confidence = Math.min(100, confidenceFor(result) + 8);
+  result.tasks = Array.isArray(llm.tasks) && llm.tasks.length
+    ? llm.tasks.map((task) => ({
+        title: task.title || "待辦事項",
+        detail: task.detail || "請確認文件內容並完成後續作業。",
+        meta: task.meta || result.priority,
+        done: false,
+      }))
+    : base.tasks;
+  result.summary = Array.isArray(llm.summaryItems) && llm.summaryItems.length
+    ? llm.summaryItems.map((item) => ({
+        title: item.title || "摘要",
+        detail: item.detail || String(item),
+      }))
+    : base.summary;
+  result.formDraft = [
+    ["文件分類", result.category],
+    ["機構名稱", result.issuer],
+    ["金額", result.amount],
+    ["期限/日期", result.date],
+    ["建議用途", suggestedUse(result.category)],
+    ["提醒時間", result.reminderLead],
+    ["優先級", result.priority],
+    ["解析來源", "LLM API"],
+    ["資料保存", "不保存原始檔，僅保存使用者確認後的摘要與提醒"],
+  ];
+  result.trace = [
+    ["分類依據", "LLM API 回傳結果與本機欄位檢核"],
+    ["金額來源", result.amount === "未偵測" ? "未在內容中找到明確金額" : `擷取到金額片段：${result.amount}`],
+    ["日期來源", result.date === "未偵測" ? "未在內容中找到明確日期" : `擷取到日期片段：${result.date}`],
+    ["原檔狀態", "平台不保存原始檔，也不提供下載或再次開啟"],
+  ];
+  return result;
+}
+
 function renderResult(result) {
   state.result = result;
   els.resultTitle.textContent = `${result.caseName} · ${result.category}`;
@@ -273,27 +500,64 @@ function updateStats() {
 }
 
 function addToHistory(result) {
+  if (!state.user) return showToast("請先登入帳號");
   state.history = [result, ...state.history.filter((item) => item.id !== result.id)].slice(0, 8);
-  localStorage.setItem(storeKey, JSON.stringify(state.history));
+  localStorage.setItem(userScopedKey("history"), JSON.stringify(state.history));
   renderHistory();
   updateStats();
 }
 
 function loadHistory() {
+  const key = userScopedKey("history");
+  if (!key) return [];
   try {
-    return JSON.parse(localStorage.getItem(storeKey) || "[]");
+    return JSON.parse(localStorage.getItem(key) || "[]");
   } catch {
     return [];
   }
 }
 
+function loadLlmSettings() {
+  const key = userScopedKey("llm");
+  if (!key) return { enabled: false, endpoint: "", model: "", apiKey: "" };
+  try {
+    return JSON.parse(localStorage.getItem(key) || '{"enabled":false,"endpoint":"","model":"","apiKey":""}');
+  } catch {
+    return { enabled: false, endpoint: "", model: "", apiKey: "" };
+  }
+}
+
+function saveLlmSettings() {
+  if (!state.user) return showToast("請先登入帳號");
+  state.llm = {
+    enabled: els.llmEnabledInput.checked,
+    endpoint: els.llmEndpointInput.value.trim(),
+    model: els.llmModelInput.value.trim(),
+    apiKey: els.llmKeyInput.value,
+  };
+  localStorage.setItem(userScopedKey("llm"), JSON.stringify(state.llm));
+  renderLlmSettings();
+  showToast("LLM API 設定已保存");
+}
+
+function renderLlmSettings() {
+  const settings = state.llm || { enabled: false, endpoint: "", model: "", apiKey: "" };
+  els.llmEndpointInput.value = settings.endpoint || "";
+  els.llmModelInput.value = settings.model || "";
+  els.llmKeyInput.value = settings.apiKey || "";
+  els.llmEnabledInput.checked = Boolean(settings.enabled);
+  els.llmStatus.textContent = settings.enabled ? "已啟用" : "尚未啟用";
+}
+
 function copyDraft() {
+  if (!state.user) return showToast("請先登入帳號");
   if (!state.result) return showToast("請先完成一次解析");
   const text = state.result.formDraft.map(([label, value]) => `${label}: ${value}`).join("\n");
   navigator.clipboard?.writeText(text).then(() => showToast("已複製表單草稿")).catch(() => showToast("瀏覽器不允許自動複製"));
 }
 
 function downloadJson() {
+  if (!state.user) return showToast("請先登入帳號");
   if (!state.result) return showToast("請先完成一次解析");
   const blob = new Blob([JSON.stringify(state.result, null, 2)], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -327,10 +591,30 @@ document.querySelectorAll(".sample-button").forEach((button) => {
   });
 });
 
-els.analyzeButton.addEventListener("click", () => {
+els.registerButton.addEventListener("click", registerWithPlatform);
+els.loginButton.addEventListener("click", loginWithPlatform);
+els.logoutButton.addEventListener("click", () => {
+  setActiveUser(null);
+  showToast("已登出");
+});
+document.querySelectorAll(".provider-button").forEach((button) => {
+  button.addEventListener("click", () => loginWithProvider(button.dataset.provider));
+});
+els.saveLlmButton.addEventListener("click", saveLlmSettings);
+els.checkLlmButton.addEventListener("click", async () => {
+  saveLlmSettings();
+  const text = "連線檢查：請回傳政府補助分類 JSON。申請期間：2026/07/01 至 2026/07/15。";
+  const base = analyzeDocument(text);
+  const result = await analyzeWithLlm(text, base);
+  showToast(result === base ? "已完成本機檢查" : "LLM 連線已完成");
+});
+
+els.analyzeButton.addEventListener("click", async () => {
+  if (!state.user) return showToast("請先登入或建立帳號");
   const text = els.documentText.value.trim();
   if (text.length < 12) return renderEmpty("請貼上完整帳單、保單、補助公告或行政通知文字，再執行 AI 整理。");
-  const result = analyzeDocument(text);
+  const localResult = analyzeDocument(text);
+  const result = await analyzeWithLlm(text, localResult);
   renderResult(result);
   addToHistory(result);
   showToast("文件已整理完成");
@@ -361,6 +645,7 @@ els.fileInput.addEventListener("change", async (event) => {
 els.copyDraftButton.addEventListener("click", copyDraft);
 els.downloadJsonButton.addEventListener("click", downloadJson);
 els.archiveCaseButton.addEventListener("click", () => {
+  if (!state.user) return showToast("請先登入帳號");
   if (!state.result) return showToast("請先完成一次解析");
   state.result.status = "已封存";
   addToHistory(state.result);
@@ -400,5 +685,11 @@ document.querySelectorAll(".tab").forEach((tab) => {
 els.documentText.value = samples.bill;
 const initialResult = analyzeDocument(samples.bill);
 renderResult(initialResult);
-renderHistory();
-updateStats();
+if (state.user) {
+  setActiveUser(state.user);
+} else {
+  renderAuthState();
+  renderHistory();
+  renderLlmSettings();
+  updateStats();
+}
