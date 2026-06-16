@@ -11,6 +11,13 @@ const requiredFiles = [
 const bannedUiTerms = ["Demo", "MVP", "測試"];
 const requiredUiMarkers = [
   "Platform Console",
+  "authEmailInput",
+  "registerButton",
+  "provider-button line",
+  "provider-button google",
+  "provider-button apple",
+  "llmEndpointInput",
+  "llmKeyInput",
   "caseNameInput",
   "reminderLeadInput",
   "priorityInput",
@@ -44,6 +51,12 @@ async function main() {
 
   if (!contents.get("app.js").includes("localStorage")) {
     throw new Error("History persistence is not wired");
+  }
+
+  for (const marker of ["userScopedKey", "analyzeWithLlm", "Authorization: `Bearer", "loadActiveUser"]) {
+    if (!contents.get("app.js").includes(marker)) {
+      throw new Error(`Missing application wiring: ${marker}`);
+    }
   }
 
   if (!contents.get("styles.css").includes("@media (max-width: 760px)")) {

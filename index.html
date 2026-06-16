@@ -55,6 +55,63 @@
           <p>貼上一段帳單、保單、政府補助公告或稅務資料，立即產生可追溯的摘要、待辦、表單草稿與匯出資料。</p>
         </div>
 
+        <section class="auth-panel" aria-label="使用者帳號">
+          <div class="auth-card">
+            <div class="panel-heading">
+              <span class="panel-icon">A</span>
+              <div>
+                <h3>帳號登入</h3>
+                <p>使用平台帳號或外部身份建立個人資料區，案件資料依使用者隔離保存。</p>
+              </div>
+            </div>
+            <div class="auth-grid">
+              <label><span>姓名</span><input id="authNameInput" type="text" autocomplete="name" placeholder="王小明" /></label>
+              <label><span>Email</span><input id="authEmailInput" type="email" autocomplete="email" placeholder="name@example.com" /></label>
+              <label><span>密碼</span><input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="至少 6 碼" /></label>
+            </div>
+            <div class="auth-actions">
+              <button class="primary-button" type="button" id="registerButton">建立平台帳號</button>
+              <button class="secondary-button" type="button" id="loginButton">登入</button>
+              <button class="ghost-button" type="button" id="logoutButton">登出</button>
+            </div>
+            <div class="provider-row" aria-label="外部身份登入">
+              <button class="provider-button line" type="button" data-provider="LINE">LINE</button>
+              <button class="provider-button google" type="button" data-provider="Google">Google</button>
+              <button class="provider-button apple" type="button" data-provider="Apple">Apple ID</button>
+            </div>
+          </div>
+          <div class="account-card">
+            <p class="eyebrow">Current User</p>
+            <h3 id="accountName">尚未登入</h3>
+            <p id="accountMeta">登入後才會保存案件、解析歷史與 LLM 設定。</p>
+            <div class="account-badges">
+              <span id="accountProvider">未連結</span>
+              <span id="accountStorage">資料未啟用</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="llm-panel" aria-label="LLM API 設定">
+          <div class="panel-heading">
+            <span class="panel-icon">AI</span>
+            <div>
+              <h3>LLM API 串接</h3>
+              <p>可連接 OpenAI-compatible Chat Completions API；金鑰只保存在目前瀏覽器。</p>
+            </div>
+          </div>
+          <div class="llm-grid">
+            <label><span>API Endpoint</span><input id="llmEndpointInput" type="url" placeholder="https://api.openai.com/v1/chat/completions" /></label>
+            <label><span>Model</span><input id="llmModelInput" type="text" placeholder="gpt-4.1-mini" /></label>
+            <label><span>API Key</span><input id="llmKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
+          </div>
+          <div class="llm-actions">
+            <label class="toggle-row"><input id="llmEnabledInput" type="checkbox" /> <span>啟用 LLM 解析</span></label>
+            <button class="tool-button" type="button" id="saveLlmButton">保存設定</button>
+            <button class="tool-button" type="button" id="checkLlmButton">檢查連線</button>
+            <span class="llm-status" id="llmStatus">尚未啟用</span>
+          </div>
+        </section>
+
         <div class="dashboard-strip" aria-label="工作台統計">
           <article><span>已整理</span><strong id="statDocuments">0</strong><small>個案件</small></article>
           <article><span>待辦</span><strong id="statTasks">0</strong><small>個提醒</small></article>
@@ -62,7 +119,7 @@
           <article><span>信心</span><strong id="statConfidence">--</strong><small>解析品質</small></article>
         </div>
 
-        <div class="app-shell">
+        <div class="app-shell is-locked" id="appShell">
           <aside class="input-panel" aria-label="文件輸入區">
             <div class="panel-heading">
               <span class="panel-icon">01</span>
