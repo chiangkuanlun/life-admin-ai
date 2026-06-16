@@ -79,6 +79,15 @@
               <button class="provider-button google" type="button" data-provider="Google">Google</button>
               <button class="provider-button apple" type="button" data-provider="Apple">Apple ID</button>
             </div>
+            <details class="oauth-settings">
+              <summary>第三方登入設定</summary>
+              <div class="oauth-grid">
+                <label><span>LINE Channel ID</span><input id="lineClientInput" type="text" autocomplete="off" /></label>
+                <label><span>Google Client ID</span><input id="googleClientInput" type="text" autocomplete="off" /></label>
+                <label><span>Apple Service ID</span><input id="appleClientInput" type="text" autocomplete="off" /></label>
+              </div>
+              <button class="tool-button" type="button" id="saveOauthButton">保存第三方設定</button>
+            </details>
           </div>
           <div class="account-card">
             <p class="eyebrow">Current User</p>
