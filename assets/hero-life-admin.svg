@@ -18,32 +18,38 @@
   <rect width="1280" height="860" fill="url(#desk)"/>
   <circle cx="1120" cy="120" r="160" fill="#f7d8a7" opacity="0.45"/>
   <circle cx="160" cy="760" r="180" fill="#a7ddd6" opacity="0.38"/>
+
   <g filter="url(#shadow)">
     <rect x="226" y="112" width="828" height="548" rx="28" fill="#172421"/>
     <rect x="254" y="140" width="772" height="464" rx="18" fill="url(#screen)"/>
     <rect x="448" y="628" width="384" height="34" rx="17" fill="#263630"/>
     <rect x="378" y="662" width="524" height="46" rx="23" fill="#d7e5df"/>
   </g>
+
   <g>
     <rect x="302" y="184" width="154" height="30" rx="8" fill="#10231f"/>
     <rect x="302" y="236" width="278" height="18" rx="9" fill="#cbdad5"/>
     <rect x="302" y="270" width="218" height="18" rx="9" fill="#dce8e3"/>
     <rect x="302" y="304" width="248" height="18" rx="9" fill="#dce8e3"/>
   </g>
+
   <g>
     <rect x="630" y="184" width="330" height="84" rx="12" fill="#e8f7f1" stroke="#b9dcd1"/>
     <circle cx="668" cy="226" r="17" fill="#0f766e"/>
     <rect x="700" y="205" width="178" height="16" rx="8" fill="#2b4841"/>
     <rect x="700" y="232" width="224" height="13" rx="7" fill="#89aaa1"/>
+
     <rect x="630" y="292" width="330" height="84" rx="12" fill="#fff3e0" stroke="#edd7b0"/>
     <circle cx="668" cy="334" r="17" fill="#e2604d"/>
     <rect x="700" y="313" width="198" height="16" rx="8" fill="#2b4841"/>
     <rect x="700" y="340" width="210" height="13" rx="7" fill="#a98c5c"/>
+
     <rect x="630" y="400" width="330" height="84" rx="12" fill="#eef4ff" stroke="#cbd8f7"/>
     <circle cx="668" cy="442" r="17" fill="#2563eb"/>
     <rect x="700" y="421" width="158" height="16" rx="8" fill="#2b4841"/>
     <rect x="700" y="448" width="234" height="13" rx="7" fill="#8198c9"/>
   </g>
+
   <g filter="url(#shadow)">
     <rect x="96" y="462" width="220" height="292" rx="16" fill="#ffffff"/>
     <rect x="126" y="502" width="104" height="18" rx="9" fill="#0f766e"/>
@@ -53,6 +59,7 @@
     <rect x="126" y="668" width="92" height="36" rx="10" fill="#fff3e0"/>
     <rect x="230" y="668" width="48" height="36" rx="10" fill="#e8f7f1"/>
   </g>
+
   <g filter="url(#shadow)">
     <rect x="970" y="506" width="214" height="194" rx="16" fill="#ffffff"/>
     <rect x="1000" y="542" width="114" height="18" rx="9" fill="#e2604d"/>
@@ -60,12 +67,14 @@
     <rect x="1000" y="620" width="104" height="14" rx="7" fill="#d3dfda"/>
     <path d="M1002 665h148" stroke="#0f766e" stroke-width="10" stroke-linecap="round"/>
   </g>
+
   <g>
     <path d="M344 508c48 32 100 32 156 0" fill="none" stroke="#0f766e" stroke-width="10" stroke-linecap="round"/>
     <path d="M500 508l-24-8 8 24" fill="none" stroke="#0f766e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M900 530c-42 46-96 62-162 48" fill="none" stroke="#e2604d" stroke-width="10" stroke-linecap="round"/>
     <path d="M738 578l23 10-6-25" fill="none" stroke="#e2604d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
+
   <g>
     <rect x="302" y="526" width="278" height="50" rx="12" fill="#10231f"/>
     <rect x="330" y="544" width="128" height="14" rx="7" fill="#ffffff"/>
