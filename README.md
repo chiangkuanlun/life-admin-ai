@@ -2,6 +2,12 @@
 
 這是一個可立即展示的靜態 SaaS 前端 MVP，鎖定台灣個人用戶，主打 AI 文件整理、帳單/繳費/行政提醒、表單草稿與不留原檔資料策略。
 
+## 線上測試網址
+
+GitHub Pages 部署完成後可從以下網址開啟：
+
+https://chiangkuanlun.github.io/life-admin-ai/
+
 ## 使用方式
 
 直接開啟 GitHub Pages 網址即可使用，不需要安裝套件或啟動後端。
