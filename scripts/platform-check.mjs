@@ -18,6 +18,8 @@ const requiredUiMarkers = [
   "https://accounts.google.com/gsi/client",
   "googleOriginOutput",
   "copyGoogleOriginButton",
+  "copyMobileOauthLinkButton",
+  "mobileOauthLinkOutput",
   "provider-button apple",
   "llmEndpointInput",
   "llmKeyInput",
@@ -62,7 +64,7 @@ async function main() {
     }
   }
 
-  for (const marker of ["passwordHash", "hashSecret", "startOAuth", "handleOAuthCallback", "google.accounts.oauth2.initTokenClient", "requestAccessToken", "body.guest"]) {
+  for (const marker of ["passwordHash", "hashSecret", "startOAuth", "handleOAuthCallback", "google.accounts.oauth2.initTokenClient", "requestAccessToken", "applyOauthSettingsFromUrl", "google_client_id", "body.guest"]) {
     const haystack = `${contents.get("app.js")}\n${contents.get("styles.css")}`;
     if (!haystack.includes(marker)) {
       throw new Error(`Missing auth/OAuth wiring: ${marker}`);
