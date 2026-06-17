@@ -55,6 +55,8 @@ const els = {
   googleOriginOutput: document.querySelector("#googleOriginOutput"),
   saveOauthButton: document.querySelector("#saveOauthButton"),
   copyGoogleOriginButton: document.querySelector("#copyGoogleOriginButton"),
+  copyMobileOauthLinkButton: document.querySelector("#copyMobileOauthLinkButton"),
+  mobileOauthLinkOutput: document.querySelector("#mobileOauthLinkOutput"),
   accountName: document.querySelector("#accountName"),
   accountMeta: document.querySelector("#accountMeta"),
   accountProvider: document.querySelector("#accountProvider"),
@@ -232,6 +234,7 @@ function saveOauthSettings() {
   oauthSettings.googleClientId = els.googleClientInput.value.trim();
   oauthSettings.appleClientId = els.appleClientInput.value.trim();
   localStorage.setItem(oauthKey, JSON.stringify(oauthSettings));
+  renderOauthSettings();
   showToast("第三方登入設定已保存");
 }
 
@@ -240,6 +243,44 @@ function renderOauthSettings() {
   els.googleClientInput.value = oauthSettings.googleClientId || "";
   els.appleClientInput.value = oauthSettings.appleClientId || "";
   els.googleOriginOutput.value = location.origin;
+  els.mobileOauthLinkOutput.value = buildMobileOauthLink();
+}
+
+function applyOauthSettingsFromUrl() {
+  const params = new URLSearchParams(location.search);
+  let changed = false;
+  const googleClientId = params.get("google_client_id");
+  const lineClientId = params.get("line_channel_id");
+  const appleClientId = params.get("apple_service_id");
+
+  if (googleClientId) {
+    oauthSettings.googleClientId = googleClientId;
+    changed = true;
+  }
+  if (lineClientId) {
+    oauthSettings.lineClientId = lineClientId;
+    changed = true;
+  }
+  if (appleClientId) {
+    oauthSettings.appleClientId = appleClientId;
+    changed = true;
+  }
+
+  if (changed) {
+    localStorage.setItem(oauthKey, JSON.stringify(oauthSettings));
+    const cleanUrl = `${location.origin}${location.pathname}${location.hash || ""}`;
+    history.replaceState({}, document.title, cleanUrl);
+    showToast("已套用第三方登入設定");
+  }
+}
+
+function buildMobileOauthLink() {
+  const params = new URLSearchParams();
+  if (oauthSettings.googleClientId) params.set("google_client_id", oauthSettings.googleClientId);
+  if (oauthSettings.lineClientId) params.set("line_channel_id", oauthSettings.lineClientId);
+  if (oauthSettings.appleClientId) params.set("apple_service_id", oauthSettings.appleClientId);
+  const query = params.toString();
+  return query ? `${location.origin}${location.pathname}?${query}` : `${location.origin}${location.pathname}`;
 }
 
 function currentRedirectUri() {
@@ -780,6 +821,11 @@ els.copyGoogleOriginButton.addEventListener("click", () => {
   const origin = els.googleOriginOutput.value || location.origin;
   navigator.clipboard?.writeText(origin).then(() => showToast("已複製 Google 授權來源")).catch(() => showToast(origin));
 });
+els.copyMobileOauthLinkButton.addEventListener("click", () => {
+  saveOauthSettings();
+  const link = buildMobileOauthLink();
+  navigator.clipboard?.writeText(link).then(() => showToast("已複製手機設定連結")).catch(() => showToast(link));
+});
 els.saveLlmButton.addEventListener("click", saveLlmSettings);
 els.checkLlmButton.addEventListener("click", async () => {
   saveLlmSettings();
@@ -865,6 +911,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
 els.documentText.value = samples.bill;
 const initialResult = analyzeDocument(samples.bill);
 renderResult(initialResult);
+applyOauthSettingsFromUrl();
 renderOauthSettings();
 handleOAuthCallback().catch((error) => showToast(`第三方登入回傳處理未完成：${error.message}`));
 if (state.user) {

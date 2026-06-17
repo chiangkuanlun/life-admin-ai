@@ -433,6 +433,26 @@ textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15, 118, 
   color: var(--ink);
   outline: none;
 }
+.oauth-link-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.oauth-link-row span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.oauth-link-row input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfb;
+  color: var(--ink);
+  outline: none;
+}
 body.guest .hero,
 body.guest .workspace > .section-heading,
 body.guest .llm-panel,
