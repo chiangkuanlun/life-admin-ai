@@ -52,7 +52,9 @@ const els = {
   lineClientInput: document.querySelector("#lineClientInput"),
   googleClientInput: document.querySelector("#googleClientInput"),
   appleClientInput: document.querySelector("#appleClientInput"),
+  googleOriginOutput: document.querySelector("#googleOriginOutput"),
   saveOauthButton: document.querySelector("#saveOauthButton"),
+  copyGoogleOriginButton: document.querySelector("#copyGoogleOriginButton"),
   accountName: document.querySelector("#accountName"),
   accountMeta: document.querySelector("#accountMeta"),
   accountProvider: document.querySelector("#accountProvider"),
@@ -237,6 +239,7 @@ function renderOauthSettings() {
   els.lineClientInput.value = oauthSettings.lineClientId || "";
   els.googleClientInput.value = oauthSettings.googleClientId || "";
   els.appleClientInput.value = oauthSettings.appleClientId || "";
+  els.googleOriginOutput.value = location.origin;
 }
 
 function currentRedirectUri() {
@@ -251,14 +254,10 @@ function oauthState(provider) {
 
 function startOAuth(provider) {
   saveOauthSettings();
+  if (provider === "Google") return startGoogleOAuth();
   const redirectUri = currentRedirectUri();
   const stateValue = oauthState(provider);
   let url = "";
-
-  if (provider === "Google") {
-    if (!oauthSettings.googleClientId) return showToast("請先輸入 Google Client ID");
-    url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(oauthSettings.googleClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&state=${encodeURIComponent(stateValue)}&prompt=select_account`;
-  }
 
   if (provider === "LINE") {
     if (!oauthSettings.lineClientId) return showToast("請先輸入 LINE Channel ID");
@@ -271,6 +270,39 @@ function startOAuth(provider) {
   }
 
   if (url) location.href = url;
+}
+
+function startGoogleOAuth() {
+  if (!oauthSettings.googleClientId) return showToast("請先輸入 Google Client ID");
+  if (!window.google?.accounts?.oauth2) return showToast("Google 認證元件載入中，請稍後再試");
+
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: oauthSettings.googleClientId,
+    scope: "openid email profile",
+    prompt: "select_account",
+    callback: async (tokenResponse) => {
+      if (tokenResponse.error) {
+        showToast(`Google 認證未完成：${tokenResponse.error}`);
+        return;
+      }
+      try {
+        const profile = await fetchGoogleProfile(tokenResponse.access_token);
+        const user = await createUser({
+          name: profile.name,
+          email: profile.email,
+          password: "",
+          provider: "Google",
+          providerSubject: profile.subject,
+        });
+        setActiveUser(safeUser(user));
+        showToast("Google 登入完成");
+      } catch (error) {
+        showToast(`Google 使用者資料讀取失敗：${error.message}`);
+      }
+    },
+  });
+
+  tokenClient.requestAccessToken();
 }
 
 async function handleOAuthCallback() {
@@ -744,6 +776,10 @@ document.querySelectorAll(".provider-button").forEach((button) => {
   button.addEventListener("click", () => startOAuth(button.dataset.provider));
 });
 els.saveOauthButton.addEventListener("click", saveOauthSettings);
+els.copyGoogleOriginButton.addEventListener("click", () => {
+  const origin = els.googleOriginOutput.value || location.origin;
+  navigator.clipboard?.writeText(origin).then(() => showToast("已複製 Google 授權來源")).catch(() => showToast(origin));
+});
 els.saveLlmButton.addEventListener("click", saveLlmSettings);
 els.checkLlmButton.addEventListener("click", async () => {
   saveLlmSettings();
