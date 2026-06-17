@@ -6,6 +6,7 @@
     <meta name="description" content="清單生活 AI，協助台灣個人用戶整理帳單、保單、稅務文件、補助公告與行政提醒。" />
     <title>清單生活 AI | AI 生活行政助手</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -85,8 +86,10 @@
                 <label><span>LINE Channel ID</span><input id="lineClientInput" type="text" autocomplete="off" /></label>
                 <label><span>Google Client ID</span><input id="googleClientInput" type="text" autocomplete="off" /></label>
                 <label><span>Apple Service ID</span><input id="appleClientInput" type="text" autocomplete="off" /></label>
+                <label><span>Google 授權來源</span><input id="googleOriginOutput" type="text" readonly /></label>
               </div>
               <button class="tool-button" type="button" id="saveOauthButton">保存第三方設定</button>
+              <button class="tool-button" type="button" id="copyGoogleOriginButton">複製 Google 授權來源</button>
             </details>
           </div>
           <div class="account-card">

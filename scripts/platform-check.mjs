@@ -15,6 +15,9 @@ const requiredUiMarkers = [
   "registerButton",
   "provider-button line",
   "provider-button google",
+  "https://accounts.google.com/gsi/client",
+  "googleOriginOutput",
+  "copyGoogleOriginButton",
   "provider-button apple",
   "llmEndpointInput",
   "llmKeyInput",
@@ -59,7 +62,7 @@ async function main() {
     }
   }
 
-  for (const marker of ["passwordHash", "hashSecret", "startOAuth", "handleOAuthCallback", "response_type=token", "body.guest"]) {
+  for (const marker of ["passwordHash", "hashSecret", "startOAuth", "handleOAuthCallback", "google.accounts.oauth2.initTokenClient", "requestAccessToken", "body.guest"]) {
     const haystack = `${contents.get("app.js")}\n${contents.get("styles.css")}`;
     if (!haystack.includes(marker)) {
       throw new Error(`Missing auth/OAuth wiring: ${marker}`);
